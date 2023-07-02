@@ -1,4 +1,4 @@
-#Autobooga
+# Autobooga
 
 ### Acknowledgment :
 thanks to Sascha Endlicher of Panomity GmbH for releasing MegaSearch 
@@ -46,7 +46,7 @@ full URL (including http/https protocol) in the prompt the first 1000 words of t
 behind the URL are retrieved. The model still receives the whole prompt. If the prompt was 
 only the URL a "summarize this page" is added at the end.
 
-###How models perform :
+### How models perform :
 This extension was found to work well with 13B models and especially well with 
 30B models. *Uncensored* models seem to perform better than guardrailed ones, and the 
 higher the context limit the better. 
@@ -63,7 +63,7 @@ yourself. It's really a subjective matter. 30B models are great at summarizing p
 or even symbols you don't understand, and big context let you ask more questions and go deeper into 
 understanding pages and results. It's a trade-off (unless you have tons of VRAM to spare)
 
-###Requirements :
+### Requirements :
 Obviously Oobabooga, and as much VRAM as you can, as context-limit is king. 
 You also need to be able to access a Searx instance. You can find a list of 
 public instances here : https://searx.space/
@@ -76,7 +76,7 @@ datetime`
 
 So nothing horrible that will break your system.
 
-###Installation :
+### Installation :
 * Check out this repo into `{YOUR OOBABOOGA INSTALLATION DIRECTORY}/extensions`
 * Enter the oogabooga virtual environment if you have one and execute
 `pip install -r requirements.txt` to install missing modules.
@@ -89,17 +89,17 @@ You're set.
 Just one last thing ... 
 
 
-#DON'T TRUST THE LLM!!! 
+## DON'T TRUST THE LLM!!! 
 I mean it! While the models I tried did a terrific job at summarizing stuff they retrieve 
 they can still hallucinate heavily. 13B models and lower are especially prone at ignoring what
 they read (I had a 7B model actually complaining that its completely fabricated story hadn't made
 a bigger splash in the news) and even 30B models are not safe from extrapolating "facts" from random
 elements on the page. Always double check if you can, and if you can't then use with extreme caution!
 
-#DON'T TRUST THE LLM!!! 
+## DON'T TRUST THE LLM!!! 
 Yes. that was on purpose and not an accidental copy and paste.
 
-#THE WOKE PART ...
+### THE WOKE PART ...
 Anyway ... have fun and enjoy the fact that we live in the future with AI, Electric Cars, VR, and a 
 global climatic catastrophe just right around the corner. Also, remember that you probably use up less
 energy running LLMs at home on your gaming rig than if you used ChatGPT, Bing or Bard all the time. (and probably
