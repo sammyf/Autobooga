@@ -51,7 +51,7 @@ This extension was found to work well with 13B models and especially well with
 30B models. *Uncensored* models seem to perform better than guardrailed ones, and the 
 higher the context limit the better. 
 
-On a RTX3090/24GB the two models that performed best for me (very subjective and not representative
+On a RTX3090/24GB the models that performed best for me (very subjective and not representative
 opinion) were :
 
    * TheBloke_Wizard-Vicuna-13B-Uncensored-SuperHOT-8K-GPTQ with a 8K context
