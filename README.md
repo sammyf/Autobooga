@@ -65,7 +65,7 @@ understanding pages and results. It's a trade-off (unless you have tons of VRAM 
 
 ### Requirements :
 Obviously Oobabooga, and as much VRAM as you can, as context-limit is king. 
-You also need to be able to access a Searx instance with support for json output. You can find a list of 
+You also need to be able to access a Searx instance **with support for json output**. You can find a list of 
 public instances here : https://searx.space/ . 
 
 The extension uses those four packages : 
