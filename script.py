@@ -23,23 +23,9 @@ from modules import chat
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import re
+import gradio as gr
 
-
-############# OPTIONS #############
-# You should review the values in the following section and edit
-# them according to your needs.
-#
-## searx instance for internet searches
-SEARX_SERVER = 'ENTER A SEARX SERVER THAT CAN OUTPUT JSON HERE'
-## Maximum tokens to return when retrieving a webpage (1 token is about 1 word)
-MAX_EXTRACTED_TEXT = 1500
-## Maximum entries to return when doing an internet search
-MAX_SEARCH_RESULTS = 5
-## Maximum tokens to return when doing an internet search
-MAX_SEARCH_TEXT = 1500
-#
-############# END OF OPTIONS #############
-
+CONFIG_FILE="extensions/autobooga/autobooga_config.json"
 ############# TRIGGER PHRASES  #############
 ## you can add anything you like here, just be careful not to trigger unwanted searches or even loops
 INTERNET_QUERY_PROMPTS=[ "search the internet for information on", "search the internet for information about",
@@ -65,20 +51,47 @@ input_hijack = {
     'value': ["", ""]
 }
 
+with open(CONFIG_FILE) as f:
+    config = json.load(f)
+
+params = {
+    "searx_server":config['searx_server'],
+    "max_search_results":config['max_search_results'],
+    "max_text_length":config['max_text_length']
+}
+
+def set_searx_server( x):
+    params.update({"searx_server": x})
+    with open('extensions/moztts/tts_config.json', 'w') as f:
+        json.dump(params, f, indent=4)
+
+def set_max_search_results( x):
+    params.update({"maximum_search_results": x})
+    with open(CONFIG_FILE, 'w') as f:
+        json.dump(params, f, indent=4)
+
+def set_max_extracted_text(x):
+    params.update({"maximum_text_length": x})
+    with open(CONFIG_FILE, 'w') as f:
+        json.dump(params, f, indent=4)
+
 def call_searx_api(query):
-    url = f"{SEARX_SERVER}?q={query}&format=json"
+    url = f"{params['searx_server']}?q={query}&format=json"
     try:
         response = requests.get(url)
     except:
-        return "An internet search returned no results."
+        return "An internet search returned no results as the SEARX server did not answer."
     # Load the response data into a JSON object.
-    data = json.loads(response.text)
+    try:
+        data = json.loads(response.text)
+    except:
+        return "An internet search returned no results as the SEARX server doesn't seem to output json."
     # Initialize variables for the extracted texts and count of results.
     texts = ''
     count = 0
-    max_results = MAX_SEARCH_RESULTS
+    max_results = params['max_search_results']
     rs = "An internet search returned these results:"
-    result_max_characters = MAX_SEARCH_TEXT
+    result_max_characters = params['max_text_length']
     # If there are items in the data, proceed with parsing the result.
     if 'results' in data:
         # For each result, fetch the webpage content, parse it, summarize it, and append it to the string.
@@ -97,13 +110,11 @@ def call_searx_api(query):
                     count += 1
         # Add the first 'result_max_characters' characters of the extracted texts to the input string.
         rs += texts[:result_max_characters]
-        print(f"string  : {rs}")
     # Return the modified string.
     return rs
 
 ## returns only the first URL in a prompt
 def extract_url(prompt):
-    print("entering extract URL\n")
     url=""
     # Regular expression to match URLs
     url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
@@ -111,8 +122,8 @@ def extract_url(prompt):
     urls = re.findall(url_pattern, prompt.lower())
     if len(urls)>0:
         url=urls[0]
-    print("\n******* URL FOUND : '"+url+"' *********\n")
     return url
+
 
 def trim_to_x_words(prompt:string, limit:int):
     rev_rs = []
@@ -170,10 +181,9 @@ def get_page(url, prompt):
             if 'content' in m.attrs:
                 if m['name'] == 'page-topic' or m['name'] == 'description':
                     text += f"It's {m['name']} is '{m['content']}'"
-    print("******* TEXT FOUND : \n"+text+"\n *********\n")
     if prompt == url:
         prompt = f"Summarize the content from this url : {url}"
-    prompt = f"{prompt}\nContent of {url} : \n{trim_to_x_words(text, MAX_EXTRACTED_TEXT)}[...]\n"
+    prompt = f"{prompt}\nContent of {url} : \n{trim_to_x_words(text, params['max_text_length'])}[...]\n"
     return prompt
 
 def output_modifier(llm_response, state):
@@ -195,9 +205,7 @@ def input_modifier(prompt, state):
 
     q = extract_query(prompt)
     if q[0] != "":
-        print(f"** search-engine call ** with query {q[0]}\n")
         searx_results = call_searx_api(q[0])
-        print(f"** returned **\n")
         # Pass the SEARX results back to the LLM.
         if(q[1] == ""):
             q[1] = "Summarize the results."
@@ -207,3 +215,16 @@ def input_modifier(prompt, state):
         if url != "":
             prompt = get_page(url, prompt)
     return now+"\n"+prompt
+
+def ui():
+    with gr.Accordion("AutoBooga"):
+        with gr.Row():
+            searx_server = gr.Textbox(value=params['searx_server'], label='Searx-NG Server capable of returning JSon')
+        with gr.Row():
+            max_search_results = gr.Textbox(value=params['max_search_results'], label='The amount of search results to read.')
+        with gr.Row():
+            max_extracted_text = gr.Text(value=params['max_text_length'], label='The maximum amount of words to read. Anything after that is truncated')
+
+    searx_server.change(lambda s: set_searx_server(s), searx_server, None),
+    max_search_results.change(lambda s: set_max_search_results(s), max_search_results, None),
+    max_extracted_text.change(lambda s: set_max_extracted_text(s), max_extracted_text, None),
