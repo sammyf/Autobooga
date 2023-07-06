@@ -23,7 +23,7 @@ from modules import chat
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import re
-import sqlite3
+
 
 ############# OPTIONS #############
 # You should review the values in the following section and edit
@@ -64,17 +64,6 @@ input_hijack = {
     'state': False,
     'value': ["", ""]
 }
-
-def generate_db(character):
-    if not os.path.isfile(f"mtm_{character}.db"):
-        c = sqlite3.connect(f"mtm_{character}.db")
-        c.execute('CREATE TABLE "mtm" (	'
-                  '"id"	INTEGER NOT NULL UNIQUE,	'
-                  '"paragraph"	INTEGER,	'
-                  '"content"	TEXT,	'
-                  '"summary"	TEXT,	'
-                  'PRIMARY KEY("id" AUTOINCREMENT));')
-        c.close()
 
 def call_searx_api(query):
     url = f"{SEARX_SERVER}?q={query}&format=json"
@@ -124,22 +113,6 @@ def extract_url(prompt):
         url=urls[0]
     print("\n******* URL FOUND : '"+url+"' *********\n")
     return url
-
-def set_paragraph_summary(paragraph:int,content:string, summary:string):
-    global character
-    c = sqlite3.connect(f"mtm_{character}.db")
-    c.conn.cursor()
-    c.execute(f"INSERT INTO mtm VALUES ({paragraph}, '{content}', '{summary}')")
-    c.close()
-
-def get_paragraph_summary(paragraph):
-    c = sqlite3.connect(f"mtm_{character}.db")
-    c.conn.cursor()
-    rs = ""
-    for row in c.execute(f'SELECT summary FROM mtm WHERE paragraph={paragraph}'):
-        rs = rs + row
-    c.close()
-    return rs
 
 def trim_to_x_words(prompt:string, limit:int):
     rev_rs = []
