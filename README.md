@@ -5,7 +5,10 @@ thanks to Sascha Endlicher of Panomity GmbH for releasing MegaSearch
 for Oobabooga and indirectly making me write this. Part of the Autobooga
 code (the Searx search) is heavily based off Megasearch's code.
 
-#### IMPORTANT: This extension is NOT compatible with the Long_Term_Memory extension!
+### What's new :
+* The settings can now be set in the UI and will persist.
+* The meta tags of pages that do not have any visible text will be used if possible
+* Many "Sorry, can't do that, Dave" catches when things fail
 
 ### What it does :
 *Autobooga* is just a simple extension for oobabooga that gives
@@ -82,9 +85,9 @@ So nothing horrible that will break your system.
 * Check out this repo into `{YOUR OOBABOOGA INSTALLATION DIRECTORY}/extensions`
 * Enter the oogabooga virtual environment if you have one and execute
 `pip install -r requirements.txt` to install missing modules.
-* use notepad or any editor to edit script.py and change the values in the option section at the start of the script 
 * Either add the extension on startup with 
 --extension autobooga or check it in the interface panel
+* **modify the settings in the Autobooga Accordeon panel in the UI**
 
 You're set.
 
