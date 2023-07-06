@@ -5,10 +5,12 @@ thanks to Sascha Endlicher of Panomity GmbH for releasing MegaSearch
 for Oobabooga and indirectly making me write this. Part of the Autobooga
 code (the Searx search) is heavily based off Megasearch's code.
 
+#### IMPORTANT: This extension is NOT compatible with the Long_Term_Memory extension!
+
 ### What it does :
 *Autobooga* is just a simple extension for oobabooga that gives
 LLMs the ability to call a SEARX search engine and to read URLs ... 
-and a clock.
+and a clock. 
 
 **The Date and Time** are added at the start of each prompt in the Format :
 "It's 12:00 on Friday February, 1 April 2026."
