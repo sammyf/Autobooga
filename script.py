@@ -26,6 +26,7 @@ import re
 import gradio as gr
 
 CONFIG_FILE="extensions/autobooga/autobooga_config.json"
+
 ############# TRIGGER PHRASES  #############
 ## you can add anything you like here, just be careful not to trigger unwanted searches or even loops
 INTERNET_QUERY_PROMPTS=[ "search the internet for information on", "search the internet for information about",
@@ -75,6 +76,7 @@ def set_max_extracted_text(x):
     with open(CONFIG_FILE, 'w') as f:
         json.dump(params, f, indent=4)
 
+
 def call_searx_api(query):
     url = f"{params['searx_server']}?q={query}&format=json"
     try:
@@ -115,6 +117,7 @@ def call_searx_api(query):
 
 ## returns only the first URL in a prompt
 def extract_url(prompt):
+    print("entering extract URL\n")
     url=""
     # Regular expression to match URLs
     url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
@@ -122,6 +125,7 @@ def extract_url(prompt):
     urls = re.findall(url_pattern, prompt.lower())
     if len(urls)>0:
         url=urls[0]
+    print("\n******* URL FOUND : '"+url+"' *********\n")
     return url
 
 
@@ -184,6 +188,7 @@ def get_page(url, prompt):
     if prompt == url:
         prompt = f"Summarize the content from this url : {url}"
     prompt = f"{prompt}\nContent of {url} : \n{trim_to_x_words(text, params['max_text_length'])}[...]\n"
+
     return prompt
 
 def output_modifier(llm_response, state):
