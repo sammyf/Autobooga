@@ -30,7 +30,7 @@ import re
 # them according to your needs.
 #
 ## searx instance for internet searches
-SEARX_SERVER = 'https://searx.cosmic-bandito.com'
+SEARX_SERVER = 'ENTER A SEARX SERVER THAT CAN OUTPUT JSON HERE'
 ## Maximum tokens to return when retrieving a webpage (1 token is about 1 word)
 MAX_EXTRACTED_TEXT = 1500
 ## Maximum entries to return when doing an internet search
