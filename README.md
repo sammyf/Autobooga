@@ -6,7 +6,7 @@ for Oobabooga and indirectly making me write this. Part of the Autobooga
 code (the Searx search) is heavily based off Megasearch's code.
 
 ### What's new :
-* Reading text and PDF files 
+* Reading text and PDF files. You *MUST* install PyPDF2 with `pip install PyPDF2` or `pip install -r requirements.txt` 
 * Fixed a problem with the setting not being saved correctly
 * Incorrect or absent settings will not lead to a crash anymore.
 
