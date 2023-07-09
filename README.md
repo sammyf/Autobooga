@@ -6,17 +6,30 @@ for Oobabooga and indirectly making me write this. Part of the Autobooga
 code (the Searx search) is heavily based off Megasearch's code.
 
 ### What's new :
-* The settings can now be set in the UI and will persist.
-* The meta tags of pages that do not have any visible text will be used if possible
-* Many "Sorry, can't do that, Dave" catches when things fail
+* Reading text and PDF files. You *MUST* install PyPDF2 with `pip install PyPDF2` or `pip install -r requirements.txt` 
+* Fixed a problem with the setting not being saved correctly
+* Incorrect or absent settings will not lead to a crash anymore.
 
 ### What it does :
 *Autobooga* is just a simple extension for oobabooga that gives
-LLMs the ability to call a SEARX search engine and to read URLs ... 
+LLMs the ability to call a SEARX search engine and to read URLs, Files ... 
 and a clock. 
 
 **The Date and Time** are added at the start of each prompt in the Format :
 "It's 12:00 on Friday February, 1 April 2026."
+
+**Files** can be opened by using those key (case insensitive) sentences :
+* open the file 
+* read the file
+* get the file
+ 
+followed by a path enclosed in quotes (either " or ' work). Text files and PDFs are supported. Note that the content is still subjected to "maximum token extracted" settings.
+
+If the file can not be opened for some reason, the LLM **should** tell you that. Honestly, it's hit and miss. Sometimes it will just hallucinate content.
+
+Some examples
+  * Please open the file "c:\\What I Did Last Xmas.txt" and write a song about it.
+  * Open the file '/home/kermit/Documents/Love Letters By Miss Piggy.pdf'
 
 **Internet searches** are generally triggered by the user, by using one of the 
 following (case insensitive) key phrases :
