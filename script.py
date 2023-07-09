@@ -235,7 +235,7 @@ def get_page(url, prompt):
                 if m['name'] == 'page-topic' or m['name'] == 'description':
                     if m['content'] != None:
                         text += f"It's {m['name']} is '{m['content']}'"
-    if prompt.trim() == url:
+    if prompt.strip() == url:
         text = f"Summarize the content from this url : {url}"
     return text
 
