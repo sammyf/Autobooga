@@ -27,7 +27,6 @@ import gradio as gr
 from PyPDF2 import PdfReader
 
 CONFIG_FILE="extensions/autobooga/autobooga_config.json"
-
 ############# TRIGGER PHRASES  #############
 ## you can add anything you like here, just be careful not to trigger unwanted searches or even loops
 INTERNET_QUERY_PROMPTS=[ "search the internet for information on", "search the internet for information about",
@@ -111,6 +110,7 @@ def set_max_extracted_text(x):
         pass
     write_config()
 
+
 def call_searx_api(query):
     url = f"{params['searx_server']}?q={query}&format=json"
     try:
@@ -160,7 +160,6 @@ def extract_url(prompt):
         url=urls[0]
     return url
 
-
 def trim_to_x_words(prompt:string, limit:int):
     rev_rs = []
     words = prompt.split(" ")
@@ -205,14 +204,14 @@ def extract_query(prompt):
 
 def extract_file_name( prompt):
     rs=""
-    # Join the terminators into a single string, separating each with a pipe (|), which means "or" in regex
-    open_prompt = ""
+    query_raw = ""
     for qry in FILE_QUERY_PROMPTS:
-        if qry in prompt.lower():
-            open_prompt = qry
+        pattern = rf'{qry}(.*)'
+        match = re.search(pattern, prompt, re.IGNORECASE)  # re.IGNORECASE makes the search case-insensitive
+        if match:
+            query_raw = match.group(1)
             break
-    if open_prompt != "":
-        query_raw = prompt.lower().split(open_prompt)[1]
+    if query_raw != "":
         pattern = r"([\"'])(.*?)\1"
         query = re.search(pattern, query_raw)
         if query is not None:
@@ -274,7 +273,6 @@ def open_file(fname):
     rs = trim_to_x_words(rs, params['max_text_length'] )
     return f"This is the content of the file '{fname}':\n{rs}"
 
-
 def output_modifier(llm_response, state):
     global character
     # print("original response : "+llm_response)
@@ -293,16 +291,15 @@ def input_modifier(prompt, state):
         character = state["character_menu"]
     now = "it is " + datetime.now().strftime("%H:%M on %A %B,%d %Y") + "."
 
+    fn = extract_file_name(prompt)
     url = extract_url(prompt)
     q = extract_query(prompt)
-    fn = extract_file_name(prompt)
     print(f"Filename found : '{fn}'\nQuery found : {q[0]}\nUrl found : {url}\n")
     if fn != "":
         prompt = open_file(fn)+prompt
     elif url != "":
             prompt = get_page(url, prompt)+prompt
     elif q[0] != "":
-
         searx_results = call_searx_api(q[0])
         # Pass the SEARX results back to the LLM.
         if(q[1] == ""):
@@ -322,4 +319,3 @@ def ui():
     searx_server.change(lambda x: set_searx_server(x), searx_server, None)
     max_search_results.change(lambda x: set_max_search_results(x), max_search_results, None)
     max_extracted_text.change(lambda x: set_max_extracted_text(x), max_extracted_text, None)
-
