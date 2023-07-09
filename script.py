@@ -252,7 +252,6 @@ def read_pdf( fname):
     pdf = PdfReader(fname)
     rs = ""
     for page in pdf.pages:
-        page = pdf.pages[5]
         page.extract_text(visitor_text=visitor_body)
         text_body = "".join(parts)
         text_body = text_body.replace("\n", "")
