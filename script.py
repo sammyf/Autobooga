@@ -220,7 +220,10 @@ def extract_file_name( prompt):
 
 def get_page(url, prompt):
     text = "This web page doesn't have any useable content. Sorry."
-    response = requests.get(url)
+    try:
+        response = requests.get(url)
+    except:
+        return "The page could not be loaded"
     soup = BeautifulSoup(response.content, 'html.parser')
     paragraphs = soup.find_all('p')
     if len(paragraphs) > 0:
