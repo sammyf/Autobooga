@@ -26,7 +26,7 @@ import re
 import gradio as gr
 from PyPDF2 import PdfReader
 
-CONFIG_FILE="extensions/autobooga/autobooga_config.json"
+CONFIG_FILE="extensions/Autobooga/autobooga_config.json"
 ############# TRIGGER PHRASES  #############
 ## you can add anything you like here, just be careful not to trigger unwanted searches or even loops
 INTERNET_QUERY_PROMPTS=[ "search the internet for information on", "search the internet for information about",
@@ -286,11 +286,9 @@ def output_modifier(llm_response, state):
         llm_response = f"I'll ask the search engine on {q[0]} ..."
     return llm_response
 
-def input_modifier(prompt, state):
+def input_modifier(prompt):
     global character
 
-    if character == "":
-        character = state["character_menu"]
     now = "it is " + datetime.now().strftime("%H:%M on %A %B,%d %Y") + "."
 
     fn = extract_file_name(prompt)
