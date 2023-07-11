@@ -1,9 +1,11 @@
 # Autobooga
 
 ## Acknowledgment :
-thanks to Sascha Endlicher of Panomity GmbH for releasing MegaSearch 
+thanks to 
+* Sascha Endlicher of Panomity GmbH for releasing MegaSearch 
 for Oobabooga and indirectly making me write this. Part of the Autobooga
 code (the Searx search) is heavily based off Megasearch's code.
+* The InvokeAI user *Gille*, who actually tried to use this extension and found way too many bugs I really should have caught. 
 
 ## What's new :
 * Upload file button added
