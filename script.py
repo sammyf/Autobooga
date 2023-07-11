@@ -329,8 +329,10 @@ def ui():
     with gr.Accordion("AutoBooga"):
         with gr.Row():
                 file_output = gr.File()
-                upload_button = gr.UploadButton("Click to Upload a PDF, TXT or CSV file.\nNOTE: You will need to say something for the file to take effect.", file_types=[".txt", ".pdf", ".csv", ".*"], file_count="single")
-                upload_button.upload(upload_file, upload_button, file_output)
+                upload_button = gr.UploadButton("Click to Upload a PDF, TXT or CSV file.NOTE: Some text files do not work if they are, apparently, using newline/formfeed as end of line sequence instead of just newline.", file_types=[".txt", ".pdf", ".csv", ".*"], file_count="single")
+                upload_button.upload(upload_file, upload_button, file_output).then(
+                    chat.generate_chat_reply_wrapper, shared.input_params, shared.gradio['display'],
+                    show_progress=False)
         with gr.Row():
             searx_server = gr.Textbox(value=params['searx_server'], label='Searx-NG Server capable of returning JSon')
         with gr.Row():
