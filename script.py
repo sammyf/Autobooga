@@ -73,7 +73,9 @@ except:
 params = {
     "searx_server":"enter the url to a searx server capable of json here.",
     "max_search_results":5,
-    "max_text_length":1000
+    "max_text_length":1000,
+    "upload_prompt":"Please summarize the following text, one paragraph at a time:",
+    "upload_position":"before"
 }
 
 if 'searx_server' in config:
@@ -88,8 +90,21 @@ if 'max_text_length' in config:
         params.update({"max_text_length":int(config['max_text_length'])})
     except:
         pass
+if 'upload_prompt' in config:
+    params.update({"upload_prompt":config['upload_prompt']})
+if 'upload_position' in config:
+        params.update({"upload_position": config['upload_position']})
 
 write_config()
+
+
+def set_upload_prompt( x):
+    params.update({"upload_prompt": x})
+    write_config()
+
+def set_upload_position( x):
+    params.update({"upload_position": x})
+    write_config()
 
 def set_searx_server( x):
     params.update({"searx_server": x})
@@ -314,10 +329,13 @@ def input_modifier(prompt):
     return now+"\n"+prompt
 
 def dragAndDropFile(path):
+    prompt = f"{open_file(path)}\n{params['upload_prompt']}\n"
+    if params['upload_position'] == "before":
+        prompt = f"{params['upload_prompt']}\n{open_file(path)}\n"
     input_hijack.update({"state": True,
                          "value": [
-                             f"Summarize the content of each paragraph in the following text:\n{open_file(path)}\n\r",
-                             f"Summarize the content of each paragraph in the uploaded text.\n\r"]})
+                             prompt,
+                             f"{params['upload_prompt']}"]})
 
 def upload_file(file):
     file_path = file.name
@@ -334,12 +352,18 @@ def ui():
                     chat.generate_chat_reply_wrapper, shared.input_params, shared.gradio['display'],
                     show_progress=False)
         with gr.Row():
+            fu_prompt = gr.Textbox(value=params['upload_prompt'], label='Prompt accompanying uploaded files.')
+        with gr.Row():
+            fu_position = gr.Dropdown(choices=["before", "after"], value=params['upload_position'], label='Position of the uploaded files prompt in respect to the files content.')
+        with gr.Row():
             searx_server = gr.Textbox(value=params['searx_server'], label='Searx-NG Server capable of returning JSon')
         with gr.Row():
             max_search_results = gr.Textbox(value=params['max_search_results'], label='The amount of search results to read.')
         with gr.Row():
             max_extracted_text = gr.Textbox(value=params['max_text_length'], label='The maximum amount of words to read. Anything after that is truncated')
 
+    fu_prompt.change(lambda x: set_upload_prompt(x), fu_prompt, None)
+    fu_position.change(lambda x: set_upload_position(x), fu_position, None)
 
     searx_server.change(lambda x: set_searx_server(x), searx_server, None)
     max_search_results.change(lambda x: set_max_search_results(x), max_search_results, None)
