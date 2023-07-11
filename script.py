@@ -19,7 +19,7 @@ import requests
 import json
 from bs4 import BeautifulSoup
 from summarizer import Summarizer
-from modules import chat
+from modules import chat, shared
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import re
@@ -219,26 +219,29 @@ def extract_file_name( prompt):
     return rs
 
 def get_page(url, prompt):
-    text = "This web page doesn't have any useable content. Sorry."
+    text = f"The web page at {url} doesn't have any useable content. Sorry."
     try:
         response = requests.get(url)
     except:
-        return "The page could not be loaded"
+        return f"The page {url} could not be loaded"
     soup = BeautifulSoup(response.content, 'html.parser')
     paragraphs = soup.find_all('p')
     if len(paragraphs) > 0:
         text = '\n'.join(p.get_text() for p in paragraphs)
         text = f"Content of {url} : \n{trim_to_x_words(text, params['max_text_length'])}[...]\n"
     else:
-        text = f"This web page doesn't seem to have any readable content."
+        text = f"The web page at {url} doesn't seem to have any readable content."
         metas = soup.find_all("meta")
         for m in metas:
             if 'content' in m.attrs:
-                if m['name'] == 'page-topic' or m['name'] == 'description':
-                    if m['content'] != None:
-                        text += f"It's {m['name']} is '{m['content']}'"
+                try:
+                    if 'name' in m and m['name'] == 'page-topic' or m['name'] == 'description':
+                        if 'content' in m and m['content'] != None:
+                            text += f"It's {m['name']} is '{m['content']}'"
+                except:
+                    pass
     if prompt.strip() == url:
-        text = f"Summarize the content from this url : {url}"
+        text += f"\nSummarize the content from this url : {url}"
     return text
 
 def read_pdf( fname):
@@ -313,12 +316,12 @@ def input_modifier(prompt):
 def dragAndDropFile(path):
     input_hijack.update({"state": True,
                          "value": [
-                             f"{open_file(path)}Summarize the content of each paragraph in the previous text.\n",
-                             f"Summarize the content of each paragraph in the uploaded text.\n"]})
-    chat.generate_chat_reply_wrapper(text="summarize the file.", start_with="", state=True)
+                             f"Summarize the content of each paragraph in the following text:\n{open_file(path)}\n\r",
+                             f"Summarize the content of each paragraph in the uploaded text.\n\r"]})
 
 def upload_file(file):
     file_path = file.name
+    print(f"\nUPLOAD-PATH : {file_path}\n")
     dragAndDropFile(file_path)
     return file_path
 
