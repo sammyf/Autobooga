@@ -264,10 +264,13 @@ def open_file(fname):
     rs = ""
     print(f"Reading {fname}")
     if fname.lower().endswith(".pdf"):
-        rs = read_pdf(fname)
+        try:
+            rs = read_pdf(fname)
+        except:
+            return "The file can not be opened. Perhaps the filename is wrong?"
     else:
         try:
-            with open(fname, 'w') as f:
+            with open(fname, 'r') as f:
                 lines = f.readlines()
         except:
             return "The file can not be opened. Perhaps the filename is wrong?"
@@ -281,7 +284,7 @@ def output_modifier(llm_response, state):
     # If the LLM needs more information, we call the SEARX API.
     q = extract_query(llm_response)
     if q[0] != "":
-        input_hijack.update({'state':True,'value':[f"\nsearch for "+q[0], f"Searching the internet for information on '{q[0]}' ..."]})
+        input_hijack.update({'state':True,'value':[f"\nsearch for '"+q[0]+"'\n", f"Searching the internet for information on '{q[0]}' ...\n"]})
         ## this is needed to avoid a death loop.
         llm_response = f"I'll ask the search engine on {q[0]} ..."
     return llm_response
@@ -290,7 +293,6 @@ def input_modifier(prompt):
     global character
 
     now = "it is " + datetime.now().strftime("%H:%M on %A %B,%d %Y") + "."
-
     fn = extract_file_name(prompt)
     url = extract_url(prompt)
     q = extract_query(prompt)
@@ -308,14 +310,33 @@ def input_modifier(prompt):
 
     return now+"\n"+prompt
 
+def dragAndDropFile(path):
+    input_hijack.update({"state": True,
+                         "value": [
+                             f"{open_file(path)}Summarize the content of each paragraph in the previous text.\n",
+                             f"Summarize the content of each paragraph in the uploaded text.\n"]})
+    chat.generate_chat_reply_wrapper(text="summarize the file.", start_with="", state=True)
+
+def upload_file(file):
+    file_path = file.name
+    dragAndDropFile(file_path)
+    return file_path
+
 def ui():
     with gr.Accordion("AutoBooga"):
+        with gr.Row():
+                file_output = gr.File()
+                upload_button = gr.UploadButton("Click to Upload a PDF, TXT or CSV file.\nNOTE: You will need to say something for the file to take effect.", file_types=[".txt", ".pdf", ".csv", ".*"], file_count="single")
+                upload_button.upload(upload_file, upload_button, file_output)
         with gr.Row():
             searx_server = gr.Textbox(value=params['searx_server'], label='Searx-NG Server capable of returning JSon')
         with gr.Row():
             max_search_results = gr.Textbox(value=params['max_search_results'], label='The amount of search results to read.')
         with gr.Row():
             max_extracted_text = gr.Textbox(value=params['max_text_length'], label='The maximum amount of words to read. Anything after that is truncated')
+
+
     searx_server.change(lambda x: set_searx_server(x), searx_server, None)
     max_search_results.change(lambda x: set_max_search_results(x), max_search_results, None)
     max_extracted_text.change(lambda x: set_max_extracted_text(x), max_extracted_text, None)
+
