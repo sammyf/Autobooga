@@ -27,6 +27,8 @@ import gradio as gr
 from PyPDF2 import PdfReader
 
 CONFIG_FILE="extensions/Autobooga/autobooga_config.json"
+LOG_DIR="logs/AB_"
+LOG_FILE="_logs.txt"
 ############# TRIGGER PHRASES  #############
 ## you can add anything you like here, just be careful not to trigger unwanted searches or even loops
 INTERNET_QUERY_PROMPTS=[ "search the internet for information on", "search the internet for information about",
@@ -41,7 +43,7 @@ INTERNET_QUERY_PROMPTS=[ "search the internet for information on", "search the i
                          "what can you find out about ", "what information can you find out about ",
                          "what can you find out on ", "what information can you find out on ",
                          "what can you tell me about ", "what do you know about ",  "ask the search engine on ",
-                         "ask the search engine about ", "ask the seach engine on "]
+                         "ask the search engine about "]
 
 FILE_QUERY_PROMPTS=[
     "open the file ",
@@ -51,7 +53,7 @@ FILE_QUERY_PROMPTS=[
 ]
 
 DBNAME = ""
-character  = ""
+character  = "unknown"
 
 # If 'state' is True, will hijack the next chat generation
 input_hijack = {
@@ -62,6 +64,10 @@ input_hijack = {
 def write_config():
     with open(CONFIG_FILE, 'w') as f:
         json.dump(params, f, indent=4)
+
+def write_log(char, s):
+    with open(LOG_DIR+char+LOG_FILE, 'a') as f:
+        f.write(s)
 
 config = []
 try:
@@ -75,7 +81,8 @@ params = {
     "max_search_results":5,
     "max_text_length":1000,
     "upload_prompt":"Please summarize the following text, one paragraph at a time:",
-    "upload_position":"before"
+    "upload_position":"before",
+    "logging_enabled":1
 }
 
 if 'searx_server' in config:
@@ -125,6 +132,12 @@ def set_max_extracted_text(x):
         pass
     write_config()
 
+def set_logging_enabled(x):
+    try:
+        params.update({"logging_enabled": int(x)})
+    except:
+        pass
+    write_config()
 
 def call_searx_api(query):
     url = f"{params['searx_server']}?q={query}&format=json"
@@ -298,6 +311,7 @@ def open_file(fname):
 
 def output_modifier(llm_response, state):
     global character
+    character = state["character_menu"]+"("+shared.model_name+")"
     # print("original response : "+llm_response)
     # If the LLM needs more information, we call the SEARX API.
     q = extract_query(llm_response)
@@ -305,11 +319,14 @@ def output_modifier(llm_response, state):
         input_hijack.update({'state':True,'value':[f"\nsearch for '"+q[0]+"'\n", f"Searching the internet for information on '{q[0]}' ...\n"]})
         ## this is needed to avoid a death loop.
         llm_response = f"I'll ask the search engine on {q[0]} ..."
+    if params['logging_enabled'] == 1:
+        now = datetime.now().strftime("%H:%M on %A %B,%d %Y")
+        write_log(character, "("+now+")"+character+"> "+llm_response+"\n")
     return llm_response
 
-def input_modifier(prompt):
+def input_modifier(prompt, state):
     global character
-
+    character = state["character_menu"]+"("+shared.model_name+")"
     now = "it is " + datetime.now().strftime("%H:%M on %A %B,%d %Y") + "."
     fn = extract_file_name(prompt)
     url = extract_url(prompt)
@@ -325,7 +342,9 @@ def input_modifier(prompt):
         if(q[1] == ""):
             q[1] = "Summarize the results."
         prompt = prompt + "\n" + searx_results+"."+q[1]
-
+    if params['logging_enabled'] == 1:
+        _now = datetime.now().strftime("%H:%M on %A %B,%d %Y")
+        write_log(character, "\n\n("+_now+") USER > "+prompt+"\n")
     return now+"\n"+prompt
 
 def dragAndDropFile(path):
@@ -361,6 +380,8 @@ def ui():
             max_search_results = gr.Textbox(value=params['max_search_results'], label='The amount of search results to read.')
         with gr.Row():
             max_extracted_text = gr.Textbox(value=params['max_text_length'], label='The maximum amount of words to read. Anything after that is truncated')
+        with gr.Row():
+            logging = gr.Checkbox(value=params['logging_enabled'], label='Log all the dialogs for posterity')
 
     fu_prompt.change(lambda x: set_upload_prompt(x), fu_prompt, None)
     fu_position.change(lambda x: set_upload_position(x), fu_position, None)
@@ -368,4 +389,4 @@ def ui():
     searx_server.change(lambda x: set_searx_server(x), searx_server, None)
     max_search_results.change(lambda x: set_max_search_results(x), max_search_results, None)
     max_extracted_text.change(lambda x: set_max_extracted_text(x), max_extracted_text, None)
-
+    logging.change( lambda x: set_logging_enabled(x), logging, None)
