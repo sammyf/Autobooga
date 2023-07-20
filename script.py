@@ -19,15 +19,16 @@ import requests
 import json
 from bs4 import BeautifulSoup
 from summarizer import Summarizer
-from modules import chat
+from modules import chat, shared
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import re
 import gradio as gr
 from PyPDF2 import PdfReader
 
-CONFIG_FILE="extensions/autobooga/autobooga_config.json"
-
+CONFIG_FILE="extensions/Autobooga/autobooga_config.json"
+LOG_DIR="logs/AB_"
+LOG_FILE="_logs.txt"
 ############# TRIGGER PHRASES  #############
 ## you can add anything you like here, just be careful not to trigger unwanted searches or even loops
 INTERNET_QUERY_PROMPTS=[ "search the internet for information on", "search the internet for information about",
@@ -42,7 +43,14 @@ INTERNET_QUERY_PROMPTS=[ "search the internet for information on", "search the i
                          "what can you find out about ", "what information can you find out about ",
                          "what can you find out on ", "what information can you find out on ",
                          "what can you tell me about ", "what do you know about ",  "ask the search engine on ",
-                         "ask the search engine about ", "ask the seach engine on "]
+                         "ask the search engine about "]
+
+FILE_QUERY_PROMPTS=[
+    "open the file ",
+    "read the file ",
+    "summarize the file ",
+    "get the file "
+]
 
 FILE_QUERY_PROMPTS=[
     "open the file ",
@@ -52,7 +60,7 @@ FILE_QUERY_PROMPTS=[
 ]
 
 DBNAME = ""
-character  = ""
+character  = "unknown"
 
 # If 'state' is True, will hijack the next chat generation
 input_hijack = {
@@ -64,6 +72,10 @@ def write_config():
     with open(CONFIG_FILE, 'w') as f:
         json.dump(params, f, indent=4)
 
+def write_log(char, s):
+    with open(LOG_DIR+char+LOG_FILE, 'a') as f:
+        f.write(s)
+
 config = []
 try:
     with open(CONFIG_FILE) as f:
@@ -74,7 +86,10 @@ except:
 params = {
     "searx_server":"enter the url to a searx server capable of json here.",
     "max_search_results":5,
-    "max_text_length":1000
+    "max_text_length":1000,
+    "upload_prompt":"Please summarize the following text, one paragraph at a time:",
+    "upload_position":"before",
+    "logging_enabled":1
 }
 
 if 'searx_server' in config:
@@ -89,8 +104,21 @@ if 'max_text_length' in config:
         params.update({"max_text_length":int(config['max_text_length'])})
     except:
         pass
+if 'upload_prompt' in config:
+    params.update({"upload_prompt":config['upload_prompt']})
+if 'upload_position' in config:
+        params.update({"upload_position": config['upload_position']})
 
 write_config()
+
+
+def set_upload_prompt( x):
+    params.update({"upload_prompt": x})
+    write_config()
+
+def set_upload_position( x):
+    params.update({"upload_position": x})
+    write_config()
 
 def set_searx_server( x):
     params.update({"searx_server": x})
@@ -107,6 +135,13 @@ def set_max_search_results( x):
 def set_max_extracted_text(x):
     try:
         params.update({"max_text_length": int(x)})
+    except:
+        pass
+    write_config()
+
+def set_logging_enabled(x):
+    try:
+        params.update({"logging_enabled": int(x)})
     except:
         pass
     write_config()
@@ -160,7 +195,6 @@ def extract_url(prompt):
         url=urls[0]
     return url
 
-
 def trim_to_x_words(prompt:string, limit:int):
     rev_rs = []
     words = prompt.split(" ")
@@ -205,14 +239,14 @@ def extract_query(prompt):
 
 def extract_file_name( prompt):
     rs=""
-    # Join the terminators into a single string, separating each with a pipe (|), which means "or" in regex
-    open_prompt = ""
+    query_raw = ""
     for qry in FILE_QUERY_PROMPTS:
-        if qry in prompt.lower():
-            open_prompt = qry
+        pattern = rf'{qry}(.*)'
+        match = re.search(pattern, prompt, re.IGNORECASE)  # re.IGNORECASE makes the search case-insensitive
+        if match:
+            query_raw = match.group(1)
             break
-    if open_prompt != "":
-        query_raw = prompt.lower().split(open_prompt)[1]
+    if query_raw != "":
         pattern = r"([\"'])(.*?)\1"
         query = re.search(pattern, query_raw)
         if query is not None:
@@ -220,23 +254,29 @@ def extract_file_name( prompt):
     return rs
 
 def get_page(url, prompt):
-    text = "This web page doesn't have any useable content. Sorry."
-    response = requests.get(url)
+    text = f"The web page at {url} doesn't have any useable content. Sorry."
+    try:
+        response = requests.get(url)
+    except:
+        return f"The page {url} could not be loaded"
     soup = BeautifulSoup(response.content, 'html.parser')
     paragraphs = soup.find_all('p')
     if len(paragraphs) > 0:
         text = '\n'.join(p.get_text() for p in paragraphs)
         text = f"Content of {url} : \n{trim_to_x_words(text, params['max_text_length'])}[...]\n"
     else:
-        text = f"This web page doesn't seem to have any readable content."
+        text = f"The web page at {url} doesn't seem to have any readable content."
         metas = soup.find_all("meta")
         for m in metas:
             if 'content' in m.attrs:
-                if m['name'] == 'page-topic' or m['name'] == 'description':
-                    if m['content'] != None:
-                        text += f"It's {m['name']} is '{m['content']}'"
-    if prompt.trim() == url:
-        text = f"Summarize the content from this url : {url}"
+                try:
+                    if 'name' in m and m['name'] == 'page-topic' or m['name'] == 'description':
+                        if 'content' in m and m['content'] != None:
+                            text += f"It's {m['name']} is '{m['content']}'"
+                except:
+                    pass
+    if prompt.strip() == url:
+        text += f"\nSummarize the content from this url : {url}"
     return text
 
 def read_pdf( fname):
@@ -250,7 +290,6 @@ def read_pdf( fname):
     pdf = PdfReader(fname)
     rs = ""
     for page in pdf.pages:
-        page = pdf.pages[5]
         page.extract_text(visitor_text=visitor_body)
         text_body = "".join(parts)
         text_body = text_body.replace("\n", "")
@@ -263,10 +302,13 @@ def open_file(fname):
     rs = ""
     print(f"Reading {fname}")
     if fname.lower().endswith(".pdf"):
-        rs = read_pdf(fname)
+        try:
+            rs = read_pdf(fname)
+        except:
+            return "The file can not be opened. Perhaps the filename is wrong?"
     else:
         try:
-            with open(fname, 'w') as f:
+            with open(fname, 'r') as f:
                 lines = f.readlines()
         except:
             return "The file can not be opened. Perhaps the filename is wrong?"
@@ -274,52 +316,85 @@ def open_file(fname):
     rs = trim_to_x_words(rs, params['max_text_length'] )
     return f"This is the content of the file '{fname}':\n{rs}"
 
-
 def output_modifier(llm_response, state):
     global character
+    character = state["character_menu"]+"("+shared.model_name+")"
     # print("original response : "+llm_response)
     # If the LLM needs more information, we call the SEARX API.
     q = extract_query(llm_response)
     if q[0] != "":
-        input_hijack.update({'state':True,'value':[f"\nsearch for "+q[0], f"Searching the internet for information on '{q[0]}' ..."]})
+        input_hijack.update({'state':True,'value':[f"\nsearch for '"+q[0]+"'\n", f"Searching the internet for information on '{q[0]}' ...\n"]})
         ## this is needed to avoid a death loop.
         llm_response = f"I'll ask the search engine on {q[0]} ..."
+    if params['logging_enabled'] == 1:
+        now = datetime.now().strftime("%H:%M on %A %B,%d %Y")
+        write_log(character, "("+now+")"+character+"> "+llm_response+"\n")
     return llm_response
 
 def input_modifier(prompt, state):
     global character
-
-    if character == "":
-        character = state["character_menu"]
+    character = state["character_menu"]+"("+shared.model_name+")"
     now = "it is " + datetime.now().strftime("%H:%M on %A %B,%d %Y") + "."
-
+    fn = extract_file_name(prompt)
     url = extract_url(prompt)
     q = extract_query(prompt)
-    fn = extract_file_name(prompt)
     print(f"Filename found : '{fn}'\nQuery found : {q[0]}\nUrl found : {url}\n")
     if fn != "":
         prompt = open_file(fn)+prompt
     elif url != "":
             prompt = get_page(url, prompt)+prompt
     elif q[0] != "":
-
         searx_results = call_searx_api(q[0])
         # Pass the SEARX results back to the LLM.
         if(q[1] == ""):
             q[1] = "Summarize the results."
         prompt = prompt + "\n" + searx_results+"."+q[1]
-
+    if params['logging_enabled'] == 1:
+        _now = datetime.now().strftime("%H:%M on %A %B,%d %Y")
+        write_log(character, "\n\n("+_now+") USER > "+prompt+"\n")
     return now+"\n"+prompt
+
+def dragAndDropFile(path):
+    prompt = f"{open_file(path)}\n{params['upload_prompt']}\n"
+    if params['upload_position'] == "before":
+        prompt = f"{params['upload_prompt']}\n{open_file(path)}\n"
+    input_hijack.update({"state": True,
+                         "value": [
+                             prompt,
+                             f"{params['upload_prompt']}"]})
+
+def upload_file(file):
+    file_path = file.name
+    print(f"\nUPLOAD-PATH : {file_path}\n")
+    dragAndDropFile(file_path)
+    return file_path
 
 def ui():
     with gr.Accordion("AutoBooga"):
+        with gr.Row():
+                file_output = gr.File()
+                upload_button = gr.UploadButton("Click to Upload a PDF, TXT or CSV file.NOTE: Some text files do not work if they are, apparently, using newline/formfeed as end of line sequence instead of just newline.", file_types=[".txt", ".pdf", ".csv", ".*"], file_count="single")
+                upload_button.upload(upload_file, upload_button, file_output).then(
+                    chat.generate_chat_reply_wrapper, shared.input_params, shared.gradio['display'],
+                    show_progress=False)
+        with gr.Row():
+            fu_prompt = gr.Textbox(value=params['upload_prompt'], label='Prompt accompanying uploaded files.')
+        with gr.Row():
+            fu_position = gr.Dropdown(choices=["before", "after"], value=params['upload_position'], label='Position of the uploaded files prompt in respect to the files content.')
         with gr.Row():
             searx_server = gr.Textbox(value=params['searx_server'], label='Searx-NG Server capable of returning JSon')
         with gr.Row():
             max_search_results = gr.Textbox(value=params['max_search_results'], label='The amount of search results to read.')
         with gr.Row():
             max_extracted_text = gr.Textbox(value=params['max_text_length'], label='The maximum amount of words to read. Anything after that is truncated')
+        with gr.Row():
+            logging = gr.Checkbox(value=params['logging_enabled'], label='Log all the dialogs for posterity')
+
+    fu_prompt.change(lambda x: set_upload_prompt(x), fu_prompt, None)
+    fu_position.change(lambda x: set_upload_position(x), fu_position, None)
+
     searx_server.change(lambda x: set_searx_server(x), searx_server, None)
     max_search_results.change(lambda x: set_max_search_results(x), max_search_results, None)
     max_extracted_text.change(lambda x: set_max_extracted_text(x), max_extracted_text, None)
+    logging.change( lambda x: set_logging_enabled(x), logging, None)
 
