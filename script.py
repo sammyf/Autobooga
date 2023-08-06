@@ -332,6 +332,7 @@ def output_modifier(llm_response, state):
     #     input_hijack.update({'state':True,'value':[f"\nsearch for information on '{q[0]}'\n", f"Search for information on '{q[0]}'\n"]})
     #     ## this is needed to avoid a death loop.
     #     llm_response = f"I'll ask the search engine on {q[0]} ..."
+
     if params['logging_enabled'] == 1:
         now = datetime.now().strftime("%H:%M on %A %B,%d %Y")
         write_log(character, "("+now+")"+character+"> "+llm_response+"\n")
