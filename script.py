@@ -324,13 +324,14 @@ def output_modifier(llm_response, state):
         character = state["character_menu"]+"("+shared.model_name+")"
     except:
         character = "None"+"("+shared.model_name+")"
-    # print("original response : "+llm_response)
+    ###### Disabled (for now?) as it led to weird behaviour, if, for example the term "search for" came up in the
+    ###### original answer.
     # If the LLM needs more information, we call the SEARX API.
-    q = extract_query(llm_response)
-    if q[0] != "":
-        input_hijack.update({'state':True,'value':[f"\nsearch for information on '{q[0]}'\n", f"Search for information on '{q[0]}'\n"]})
-        ## this is needed to avoid a death loop.
-        llm_response = f"I'll ask the search engine on {q[0]} ..."
+    #q = extract_query(llm_response)
+    # if q[0] != "":
+    #     input_hijack.update({'state':True,'value':[f"\nsearch for information on '{q[0]}'\n", f"Search for information on '{q[0]}'\n"]})
+    #     ## this is needed to avoid a death loop.
+    #     llm_response = f"I'll ask the search engine on {q[0]} ..."
     if params['logging_enabled'] == 1:
         now = datetime.now().strftime("%H:%M on %A %B,%d %Y")
         write_log(character, "("+now+")"+character+"> "+llm_response+"\n")
@@ -350,7 +351,7 @@ def input_modifier(prompt, state):
     if fn != "":
         prompt = open_file(fn)+prompt
     elif url != "":
-            prompt = get_page(url, prompt)+prompt
+        prompt = get_page(url, prompt)+prompt
     elif q[0] != "":
         searx_results = call_searx_api(q[0])
         # Pass the SEARX results back to the LLM.
