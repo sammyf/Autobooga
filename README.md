@@ -25,6 +25,7 @@ can be opened by using those key (case insensitive) sentences :
 * read the file
 * get the file
 
+
 followed by a path enclosed in quotes (either " or ' work). Text files and PDFs are supported. Note that the content is still subjected to "maximum token extracted" settings.
 
 If the file can not be opened for some reason, the LLM **should** tell you that. Honestly, it's hit and miss. Sometimes it will just hallucinate content.
@@ -38,6 +39,7 @@ Some examples
 
 ### Internet searches
 are generally triggered by the user, by using one of the 
+
 following (case insensitive) key phrases :
 
   * search the internet for information on 

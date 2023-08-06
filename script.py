@@ -53,7 +53,7 @@ FILE_QUERY_PROMPTS=[
 ]
 
 DBNAME = ""
-character  = "unknown"
+character  = "None"
 
 # If 'state' is True, will hijack the next chat generation
 input_hijack = {
@@ -172,7 +172,7 @@ def call_searx_api(query):
                     texts = texts + ' ' + content+"\n"
                     # Increase the count of processed results.
                     count += 1
-        # Add the first 'result_max_characters' characters of the extracted texts to the input string.
+        # Add the first 'result_max_acters' characters of the extracted texts to the input string.
         rs += texts[:result_max_characters]
     # Return the modified string.
     return rs
@@ -309,14 +309,26 @@ def open_file(fname):
     rs = trim_to_x_words(rs, params['max_text_length'] )
     return f"This is the content of the file '{fname}':\n{rs}"
 
+def chat_input_modifier(text, visible_text, state):
+    global input_hijack
+    if input_hijack['state']:
+        input_hijack['state'] = False
+        return input_hijack['value']
+    else:
+        return text, visible_text
+
+
 def output_modifier(llm_response, state):
     global character
-    character = state["character_menu"]+"("+shared.model_name+")"
+    try:
+        character = state["character_menu"]+"("+shared.model_name+")"
+    except:
+        character = "None"+"("+shared.model_name+")"
     # print("original response : "+llm_response)
     # If the LLM needs more information, we call the SEARX API.
     q = extract_query(llm_response)
     if q[0] != "":
-        input_hijack.update({'state':True,'value':[f"\nsearch for '"+q[0]+"'\n", f"Searching the internet for information on '{q[0]}' ...\n"]})
+        input_hijack.update({'state':True,'value':[f"\nsearch for information on '{q[0]}'\n", f"Search for information on '{q[0]}'\n"]})
         ## this is needed to avoid a death loop.
         llm_response = f"I'll ask the search engine on {q[0]} ..."
     if params['logging_enabled'] == 1:
@@ -326,7 +338,10 @@ def output_modifier(llm_response, state):
 
 def input_modifier(prompt, state):
     global character
-    character = state["character_menu"]+"("+shared.model_name+")"
+    try:
+        character = state["character_menu"]+"("+shared.model_name+")"
+    except:
+        character = "None"+"("+shared.model_name+")"
     now = "it is " + datetime.now().strftime("%H:%M on %A %B,%d %Y") + "."
     fn = extract_file_name(prompt)
     url = extract_url(prompt)
