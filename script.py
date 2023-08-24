@@ -66,8 +66,11 @@ def write_config():
         json.dump(params, f, indent=4)
 
 def write_log(char, s):
-    with open(LOG_DIR+char+LOG_FILE, 'a') as f:
-        f.write(s)
+    try:
+        with open(LOG_DIR+char+LOG_FILE, 'a', encoding='utf-8') as f:
+            f.write(s)
+    except Exception as e:
+        print(f"Error writing to log: {e}")
 
 config = []
 try:
