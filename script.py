@@ -364,8 +364,22 @@ def output_modifier(llm_response, state):
     try:
         character = state["character_menu"] + "(" + shared.model_name + ")"
     except:
+<<<<<<< HEAD
         character = "None" + "(" + shared.model_name + ")"
     if params["logging_enabled"] == 1:
+=======
+        character = "None"+"("+shared.model_name+")"
+    ###### Disabled (for now?) as it led to weird behaviour, if, for example the term "search for" came up in the
+    ###### original answer.
+    # If the LLM needs more information, we call the SEARX API.
+    #q = extract_query(llm_response)
+    # if q[0] != "":
+    #     input_hijack.update({'state':True,'value':[f"\nsearch for information on '{q[0]}'\n", f"Search for information on '{q[0]}'\n"]})
+    #     ## this is needed to avoid a death loop.
+    #     llm_response = f"I'll ask the search engine on {q[0]} ..."
+
+    if params['logging_enabled'] == 1:
+>>>>>>> 2b89f798ca6e088d07f47f9a88f13e2042543d41
         now = datetime.now().strftime("%H:%M on %A %B,%d %Y")
         write_log(character, "(" + now + ")" + character + "> " + llm_response + "\n")
 
