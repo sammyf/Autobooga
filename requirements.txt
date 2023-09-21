@@ -1,5 +1,7 @@
 requests
 beautifulsoup4
+readability-lxml
+lxml
 summarizer
 datetime
 PyPDF2

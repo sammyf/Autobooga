@@ -27,6 +27,8 @@ from dateutil.relativedelta import relativedelta
 import re
 import gradio as gr
 from PyPDF2 import PdfReader
+from readability import Document
+
 
 CONFIG_FILE = "extensions/Autobooga/autobooga_config.json"
 LOG_DIR = "logs/AB_"
@@ -282,35 +284,31 @@ def extract_file_name(prompt):
     return rs
 
 
+def remove_special_characters(text):
+    # remove html tags
+    cleaned = BeautifulSoup(text, "html.parser").get_text()
+    # remove unicode characters
+    cleaned_text = re.sub(r'[^\x00-\x7F]+', '', cleaned)
+    # remove new lines
+    cleaned_text = cleaned_text.replace('\n', ' ')
+
+    # Replace multiple spaces with a single space
+    cleaned_text = re.sub(r'\s+', ' ', cleaned_text)
+
+    return cleaned_text
+
 def get_page(url, prompt):
     text = f"The web page at {url} doesn't have any useable content. Sorry."
     try:
         response = requests.get(url)
     except:
         return f"The page {url} could not be loaded"
-    soup = BeautifulSoup(response.content, "html.parser")
-    paragraphs = soup.find_all("p")
-    if len(paragraphs) > 0:
-        text = "\n".join(p.get_text() for p in paragraphs)
-        text = f"Content of {url} : \n{trim_to_x_words(text, params['max_text_length'])}[...]\n"
-    else:
-        text = f"The web page at {url} doesn't seem to have any readable content."
-        metas = soup.find_all("meta")
-        for m in metas:
-            if "content" in m.attrs:
-                try:
-                    if (
-                        "name" in m
-                        and m["name"] == "page-topic"
-                        or m["name"] == "description"
-                    ):
-                        if "content" in m and m["content"] != None:
-                            text += f"It's {m['name']} is '{m['content']}'"
-                except:
-                    pass
-    if prompt.strip() == url:
-        text += f"\nSummarize the content from this url : {url}"
-    return text
+    html_content = response.text
+    doc = Document(html_content)
+    title = doc.title()
+    content = remove_special_characters(doc.summary())
+
+    return content
 
 
 def read_pdf(fname):
