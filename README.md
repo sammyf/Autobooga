@@ -1,5 +1,9 @@
 # Autobooga
 
+## THIS EXTENSION IS NOT SUPPORTED ANYMORE!
+I'm just fed up with basically every other update to oobabooga's TextGenerationWebui breaking the extension API,
+ and simple technical questions resulting in bans from Discord and the Subreddit. I still mails about issues, and I'll try to at least point you in the correct direction to solve the problems which will definitely creep up increasingly over time, but no guarantee of anything. Your best bet if you want to use the functionality of this extension is to fork it and make it your own. Cheers.
+ 
 ## Acknowledgment :
 thanks to 
 * Sascha Endlicher of Panomity GmbH for releasing MegaSearch 
